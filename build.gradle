@@ -1,0 +1,96 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    implementation 'com.google.code.gson:gson:2.10.1'
+}
+// 1 step create fatJar
+task customFatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': 'org.example.Main'
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+
+    doLast {
+        System.out.println("Jar is complited!");
+    }
+}
+
+// 2 step remove folder
+tasks.register("removeFolder") {
+    delete 'dist'
+
+    doLast {
+        System.out.println("Folder DIST successufuly deleted!");
+    }
+}
+
+
+// 3 step create folder
+tasks.register("creatFolder") {
+    doFirst {
+        System.out.println("Start to create folder DIST");
+    }
+
+    mkdir 'dist'
+
+    doLast {
+        System.out.println("Folder DIST successufuly created!");
+    }
+}
+
+// 4 step copy source file to directory
+task copySource(type: Copy) {
+    doFirst {
+        System.out.println("Copy source");
+    }
+
+    from 'file.txt'
+    into 'dist'
+
+    doLast {
+        System.out.println("Finished step 4");
+    }
+}
+
+// 5 step copy jar file to directory
+task copyJar(type: Copy) {
+    from 'build/libs/MODULE_DEV1_1_HOME_WORK-1.0-SNAPSHOT.jar'
+    into 'dist'
+    rename 'MODULE_DEV1_1_HOME_WORK-1.0-SNAPSHOT.jar', 'myname.jar'
+}
+
+// 6 step run app
+task runWithExecJarExecutable(type: Exec) {
+    group = "Execution"
+    description = "Run the output executable jar with ExecTask"
+    commandLine "java", "-jar", "dist/myname.jar"
+}
+
+
+
+
+
+
+removeFolder.dependsOn(customFatJar)
+creatFolder.dependsOn(removeFolder)
+copySource.dependsOn(creatFolder)
+copyJar.dependsOn(copySource)
+runWithExecJarExecutable.dependsOn(copyJar)
+
+test {
+    useJUnitPlatform()
+}
